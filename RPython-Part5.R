@@ -59,7 +59,8 @@ abline(v=c(60,75,100,150),lty=2,col="darkgreen")
 
 #Natural spline
 # There is no need to select the knots here. There is a smoothing parameter which
-# can be specified by the degrees of freedom 'df' parameter
+# can be specified by the degrees of freedom 'df' parameter. The natural spline
+
 fit2=lm(mpg~ns(horsepower,df=4),data=auto)
 pred=predict(fit2,newdata=list(horsepower=hpGrid),se=T)
 plot(auto$horsepower,auto$mpg,xlim=hp,cex=.5,col="black")

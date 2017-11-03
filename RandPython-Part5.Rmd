@@ -15,9 +15,20 @@ There are several techniques which do this for e.g. piecewise-constant functions
 piecewise-linear, piecewise-quadratic/cubic/4th order polynomial etc. One such
 set of functions are the cubic splines which fit cubic polynomials to successive sections of 
 the dataset. The points where the cubic splines join, are called 'knots'. Since each section 
-has a different cubic spline, there could be discontinuities (or breaks) at these knots. To prevent these discontinuities 'natural splines' and 'smoothing splines' ensure that the seperate cubic functions have 2nd order continuity at these knots with the adjacent splines. 2nd order continuity 
-implies that the value, 1st order derivative and 2nd order derivative at these knots are equal.
+has a different cubic spline, there could be discontinuities (or breaks) at these knots. To prevent these discontinuities 'natural splines' and 'smoothing splines' ensure that the seperate cubic functions have 2nd order continuity at these knots with the adjacent splines. 2nd order continuity  implies that the value, 1st order derivative and 2nd order derivative at these knots are equal.
 
+A cubic spline with knots 
+$$\varphi_{k}$$, k=1,2,3,..K is a piecewise cubic polynomialwith continuous derivative upto order 2 at each knot
+$$y_{i} = \beta_{0} +\beta_{1}b_{1}(x_{i}) +\beta_{2}b_{2}(x_{i}) + .. +  \beta_{K+3}b_{K+3}(x_{i}) + \epsilon_{i}$$
+For each (x_{i},y+{i}) the basis functions $$b_{i}$$ are called 'basis' functions
+$$b_{1}(x_{i})=x_{i}$$
+$$b_{2}(x_{i})=x_{i}^2$$
+$$b_{3}(x_{i})=x_{i}^3$$
+$$b_{k+3}(x_{i})=(x_{i}-\varphi_{k})^3$$ 
+where k=1,2,3... K
+The 1st and 2nd derivatives of cubic splines are continuous at the knots.
+
+From Statistical Learing
 ```{r}
 df=read.csv("auto_mpg.csv",stringsAsFactors = FALSE) # Data from UCI
 df1 <- as.data.frame(sapply(df,as.numeric))
@@ -27,6 +38,10 @@ ggplot(auto,aes(x=horsepower,y=mpg)) + geom_point() + xlab("Horsepower") +
     ylab("Miles Per gallon") + ggtitle("Miles per Gallon vs Hosrsepower")
 ```
 
+
+# Fit a 4th degree polynomial
+In the code below a global 4th order polynomial is used to fit the entire range of the x axis
+parameter.
 ```{r}
 df=read.csv("auto_mpg.csv",stringsAsFactors = FALSE) # Data from UCI
 df1 <- as.data.frame(sapply(df,as.numeric))
@@ -38,23 +53,83 @@ ggplot(auto,aes(x=horsepower,y=mpg)) + geom_point() + xlab("Horsepower") +
 # Fit a 4th degree polynomial
 fit=lm(mpg~poly(horsepower,4),data=auto)
 #Display a summary of fit
-
+summary(fit)
 #Get the range of horsepower
 hp <- range(auto$horsepower)
-
 #Create a sequence to be used for plotting
 hpGrid <- seq(hp[1],hp[2],by=10)
-
 #Predict for these values of horsepower. Set Standard error as TRUE
 pred=predict(fit,newdata=list(horsepower=hpGrid),se=TRUE)
-
 #Compute bands on either side that is 2xSE
 seBands=cbind(pred$fit+2*pred$se.fit,pred$fit-2*pred$se.fit)
-
 #Plot the fit with Standard Error bands
 plot(auto$horsepower,auto$mpg,xlim=hp,cex=.5,col="black")
 title("Degree-4 Polynomial",outer=T)
 lines(hpGrid,pred$fit,lwd=2,col="blue")
 matlines(hpGrid,seBands,lwd=2,col="blue",lty=3)
+```
+
+#Fit a B Spline
+```{r}
+#Splines
+library(splines)
+fit=lm(mpg~bs(horsepower,df=6,knots=c(60,75,100,150)),data=auto)
+pred=predict(fit,newdata=list(horsepower=hpGrid),se=T)
+plot(auto$horsepower,auto$mpg,xlim=hp,cex=.5,col="black")
+lines(hpGrid,pred$fit,lwd=2)
+lines(hpGrid,pred$fit+2*pred$se,lty="dashed")
+lines(hpGrid,pred$fit-2*pred$se,lty="dashed")
+abline(v=c(60,75,100,150),lty=2,col="darkgreen")
+```
+
+Fit a Natural Spline
+extrapolates beyond the boundary knots and the ends of the function are much more constrained
+than a regular spline or a global polynomoial
+```{r}
+# There is no need to select the knots here. There is a smoothing parameter which
+# can be specified by the degrees of freedom 'df' parameter. The natural spline
+
+fit2=lm(mpg~ns(horsepower,df=4),data=auto)
+pred=predict(fit2,newdata=list(horsepower=hpGrid),se=T)
+plot(auto$horsepower,auto$mpg,xlim=hp,cex=.5,col="black")
+lines(hpGrid,pred$fit,lwd=2)
+lines(hpGrid,pred$fit+2*pred$se,lty="dashed")
+lines(hpGrid,pred$fit-2*pred$se,lty="dashed")
+
+```
+
+Fit a smoothing spline
+```{r}
+# Smoothing spline has a smoothing parameter, the degrees of freedom
+# This is too wiggly
+fit=smooth.spline(auto$horsepower,auto$mpg,df=16)
+lines(fit,col="red",lwd=2)
+
+# We can use Cross Validation to allow the spline to pick the value of this smpopothing paramter
+fit=smooth.spline(auto$horsepower,auto$mpg,cv=TRUE)
+lines(fit,col="blue",lwd=2)
+```
+
+
+Generalized Additiive models
+y_{i} = \beta_{0} + f_{1}(x_{i1}) + f_{2}(x_{i2}) + .. +f_{p}(x_{ip}) + \epsilon_{i}
+in which we use a  different function for each of the variables
+```{r}
+library(gam)
+gam=gam(mpg~s(horsepower,4)+s(cylinder,5)+s(displacement,4)+s(year,4)+s(acceleration,5),data=auto)
+summary(gam)
+par(mfrow=c(2,3))
+plot(gam,se=TRUE)
+
+```
+
+```{r}
+library(gam)
+# We can use any combination of function for GAM. In the code below 'loess' smoothing is used
+#for the year
+gam=gam(mpg~s(horsepower,4)+s(cylinder,5)+s(displacement,4)+lo(year,span=0.5)+s(acceleration,5),data=auto)
+
+par(mfrow=c(2,3))
+plot(gam,se=TRUE)
 ```
 
