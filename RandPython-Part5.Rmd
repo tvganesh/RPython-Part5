@@ -1,0 +1,60 @@
+---
+title: "RanndPython-Part5"
+author: "Tinniam V Ganesh"
+date: "November 3, 2017"
+output: html_document
+---
+
+# Splines
+When performing regression (continuous or logistic) between a target variable and a 
+feature (or a set of features), a single polynomial for the entire range of the data set
+usually does not  perform a good fit.Rather we would need to provide some sort of local 
+regression curves to different section of the data sets. 
+
+There are several techniques which do this for e.g. piecewise-constant functions, 
+piecewise-linear, piecewise-quadratic/cubic/4th order polynomial etc. One such
+set of functions are the cubic splines which fit cubic polynomials to successive sections of 
+the dataset. The points where the cubic splines join, are called 'knots'. Since each section 
+has a different cubic spline, there could be discontinuities (or breaks) at these knots. To prevent these discontinuities 'natural splines' and 'smoothing splines' ensure that the seperate cubic functions have 2nd order continuity at these knots with the adjacent splines. 2nd order continuity 
+implies that the value, 1st order derivative and 2nd order derivative at these knots are equal.
+
+```{r}
+df=read.csv("auto_mpg.csv",stringsAsFactors = FALSE) # Data from UCI
+df1 <- as.data.frame(sapply(df,as.numeric))
+df2 <- df1 %>% dplyr::select(cylinder,displacement, horsepower,weight, acceleration, year,mpg)
+auto <- df2[complete.cases(df2),]
+ggplot(auto,aes(x=horsepower,y=mpg)) + geom_point() + xlab("Horsepower") + 
+    ylab("Miles Per gallon") + ggtitle("Miles per Gallon vs Hosrsepower")
+```
+
+```{r}
+df=read.csv("auto_mpg.csv",stringsAsFactors = FALSE) # Data from UCI
+df1 <- as.data.frame(sapply(df,as.numeric))
+df2 <- df1 %>% dplyr::select(cylinder,displacement, horsepower,weight, acceleration, year,mpg)
+auto <- df2[complete.cases(df2),]
+ggplot(auto,aes(x=horsepower,y=mpg)) + geom_point() + xlab("Horsepower") + 
+    ylab("Miles Per gallon") + ggtitle("Miles per Gallon vs Hosrsepower")
+
+# Fit a 4th degree polynomial
+fit=lm(mpg~poly(horsepower,4),data=auto)
+#Display a summary of fit
+
+#Get the range of horsepower
+hp <- range(auto$horsepower)
+
+#Create a sequence to be used for plotting
+hpGrid <- seq(hp[1],hp[2],by=10)
+
+#Predict for these values of horsepower. Set Standard error as TRUE
+pred=predict(fit,newdata=list(horsepower=hpGrid),se=TRUE)
+
+#Compute bands on either side that is 2xSE
+seBands=cbind(pred$fit+2*pred$se.fit,pred$fit-2*pred$se.fit)
+
+#Plot the fit with Standard Error bands
+plot(auto$horsepower,auto$mpg,xlim=hp,cex=.5,col="black")
+title("Degree-4 Polynomial",outer=T)
+lines(hpGrid,pred$fit,lwd=2,col="blue")
+matlines(hpGrid,seBands,lwd=2,col="blue",lty=3)
+```
+
