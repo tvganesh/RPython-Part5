@@ -196,3 +196,70 @@ pred <- predict(prunedCancer,newdata=test,type="class")
 confusionMatrix(pred,test$target)
 
 ```
+
+#Decision Tree - Python
+
+```{python}
+import numpy as np
+import pandas as pd
+import os
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix
+
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.datasets import make_classification, make_blobs
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+#(X_cancer, y_cancer) = load_breast_cancer(return_X_y = True)
+
+X_train, X_test, y_train, y_test = train_test_split(X_cancer, y_cancer,
+                                                   random_state = 0)
+clf = DecisionTreeClassifier().fit(X_train, y_train)
+
+print('Accuracy of Decision Tree classifier on training set: {:.2f}'
+     .format(clf.score(X_train, y_train)))
+print('Accuracy of Decision Tree classifier on test set: {:.2f}'
+     .format(clf.score(X_test, y_test)))
+
+y_predicted=clf.predict(X_test)
+confusion = confusion_matrix(y_test, y_predicted)
+print('Accuracy: {:.2f}'.format(accuracy_score(y_test, y_predicted)))
+print('Precision: {:.2f}'.format(precision_score(y_test, y_predicted)))
+print('Recall: {:.2f}'.format(recall_score(y_test, y_predicted)))
+print('F1: {:.2f}'.format(f1_score(y_test, y_predicted)))
+```
+
+#Decision Tree - Cross Validation
+```{python}
+from sklearn.cross_validation import train_test_split, KFold
+def computeCVAccuracy(X,y,folds):
+    accuracy=[]
+    foldAcc=[]
+    depth=[1,2,3,4,5,6,7,8,9,10,11,12]
+    nK=len(X)/float(folds)
+    xval_err=0
+    for i in depth: 
+        kf = KFold(len(X),n_folds=folds)
+        for train_index, test_index in kf:
+            X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+            y_train, y_test = y.iloc[train_index], y.iloc[test_index]  
+            clf = DecisionTreeClassifier(max_depth = i).fit(X_train, y_train)
+            score=clf.score(X_test, y_test)
+            accuracy.append(score)     
+            
+        foldAcc.append(np.mean(accuracy))  
+        
+    return(foldAcc)
+cvAccuracy=computeCVAccuracy(pd.DataFrame(X_cancer),pd.DataFrame(y_cancer),folds=10)
+
+df1=pd.DataFrame(cvAccuracy)
+df1.columns=['cvAccuracy']
+df=df1.reindex([1,2,3,4,5,6,7,8,9,10,11,12])
+df.plot()
+fig1=plt.title("Decision Tree - 10-fold Cross Validation Accuracy vs Depth of tree")
+fig1=plt.xlabel("Depth of tree")
+fig1=plt.ylabel("Accuracy")
+fig1.figure.savefig('foo1.png', bbox_inches='tight')
+```
+
