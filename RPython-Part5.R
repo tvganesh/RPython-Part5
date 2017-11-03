@@ -85,3 +85,52 @@ gam=gam(mpg~s(horsepower,4)+s(cylinder,5)+s(displacement,4)+s(year,4)+s(accelera
 summary(gam)
 par(mfrow=c(2,3))
 plot(gam,se=TRUE)
+
+
+
+library(MASS)
+library(tree)
+set.seed(1)
+train = sample(1:nrow(Boston), nrow(Boston)/2)
+tree.boston=tree(medv~.,Boston,subset=train)
+summary(tree.boston)
+plot(tree.boston)
+text(tree.boston,pretty=0)
+cv.boston=cv.tree(tree.boston)
+plot(cv.boston$size,cv.boston$dev,type='b')
+prune.boston=prune.tree(tree.boston,best=5)
+plot(prune.boston)
+text(prune.boston,pretty=0)
+yhat=predict(tree.boston,newdata=Boston[-train,])
+boston.test=Boston[-train,"medv"]
+plot(yhat,boston.test)
+abline(0,1)
+mean((yhat-boston.test)^2)
+############################################
+
+cancer <- read.csv("cancer.csv",stringsAsFactors = FALSE)
+cancer <- cancer[,2:32]
+cancer$target <- as.factor(cancer$target)
+train_idx <- trainTestSplit(cancer,trainPercent=75,seed=5)
+train <- cancer[train_idx, ]
+test <- cancer[-train_idx, ]
+
+# Create Decision Tree
+cancerStatus=tree(target~.,train)
+summary(cancerStatus)
+
+# Plot decision tree with labels
+plot(cancerStatus)
+text(cancerStatus,pretty=0)
+
+# Execute 10 fold cross validation
+cvCancer=cv.tree(cancerStatus)
+plot(cvCancer)
+# Plot the 
+plot(cvCancer$size,cvCancer$dev,type='b')
+prunedCancer=prune.tree(cancerStatus,best=4)
+plot(prunedCancer)
+text(prunedCancer,pretty=0)
+
+pred <- predict(prunedCancer,newdata=test,type="class")
+confusionMatrix(pred,test$target)

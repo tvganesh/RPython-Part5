@@ -161,4 +161,38 @@ gam=gam(mpg~s(horsepower,4)+s(cylinder,5)+s(displacement,4)+lo(year,span=0.5)+s(
 par(mfrow=c(2,3))
 plot(gam,se=TRUE)
 ```
+# Generalized Additive Models (GAMs)
+I did not find the equivalent of GAMs in sklearn. There was an early prototype in Github. Looks like it is still work in progress or has probably been abandoned.
 
+
+## Decision Trees 
+
+```{r}
+cancer <- read.csv("cancer.csv",stringsAsFactors = FALSE)
+cancer <- cancer[,2:32]
+cancer$target <- as.factor(cancer$target)
+train_idx <- trainTestSplit(cancer,trainPercent=75,seed=5)
+train <- cancer[train_idx, ]
+test <- cancer[-train_idx, ]
+
+# Create Decision Tree
+cancerStatus=tree(target~.,train)
+summary(cancerStatus)
+
+# Plot decision tree with labels
+plot(cancerStatus)
+text(cancerStatus,pretty=0)
+
+# Execute 10 fold cross validation
+cvCancer=cv.tree(cancerStatus)
+plot(cvCancer)
+# Plot the 
+plot(cvCancer$size,cvCancer$dev,type='b')
+prunedCancer=prune.tree(cancerStatus,best=4)
+plot(prunedCancer)
+text(prunedCancer,pretty=0)
+
+pred <- predict(prunedCancer,newdata=test,type="class")
+confusionMatrix(pred,test$target)
+
+```
