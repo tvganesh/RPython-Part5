@@ -69,7 +69,7 @@ lines(hpGrid,pred$fit,lwd=2,col="blue")
 matlines(hpGrid,seBands,lwd=2,col="blue",lty=3)
 ```
 
-#Fit a B Spline
+#Fit a Spline
 ```{r}
 #Splines
 library(splines)
@@ -108,6 +108,35 @@ lines(fit,col="red",lwd=2)
 # We can use Cross Validation to allow the spline to pick the value of this smpopothing paramter
 fit=smooth.spline(auto$horsepower,auto$mpg,cv=TRUE)
 lines(fit,col="blue",lwd=2)
+```
+
+
+Splines - Pythn
+```{python}
+import numpy as np
+import pandas as pd
+import os
+import matplotlib.pyplot as plt
+from scipy.interpolate import LSQUnivariateSpline
+autoDF =pd.read_csv("auto_mpg.csv",encoding="ISO-8859-1")
+autoDF.shape
+autoDF.columns
+autoDF1=autoDF[['mpg','cylinder','displacement','horsepower','weight','acceleration','year']]
+autoDF2 = autoDF1.apply(pd.to_numeric, errors='coerce')
+auto=autoDF2.dropna()
+auto=auto[['horsepower','mpg']].sort_values('horsepower')
+#X=auto[['horsepower']]
+#y=auto['mpg']
+
+knots=[65,75,100,150]
+X=np.array(auto['horsepower'])
+y=np.array(auto['mpg'])
+s = LSQUnivariateSpline(X,y,knots)
+xs = linspace(40,230,1000)
+ys = s(xs)
+plt.scatter(X, y)
+plt.plot(xs, ys)
+
 ```
 
 
