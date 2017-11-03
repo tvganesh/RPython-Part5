@@ -111,7 +111,7 @@ lines(fit,col="blue",lwd=2)
 ```
 
 
-Splines - Pythn
+Splines - Python
 ```{python}
 import numpy as np
 import pandas as pd
