@@ -277,6 +277,8 @@ In the Random Forest we create 'N' number of random trees from different bootstr
 and also at each split a random subset of feature variables is chosen. Finally all the trees
 are averaged which tends to average out the overall error in the individual trees
 
+Gradient Boosted Decision Trees also use an ensemble of trees but they don't build trees with random set of features at each step. Rather small and simple trees are built and then the successive trees try to minimize the error from the earlier trees.
+
 # Random Forest - R
 ```{r}
 df=read.csv("Boston.csv",stringsAsFactors = FALSE) # Data from MASS - SL
