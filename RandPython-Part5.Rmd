@@ -263,7 +263,19 @@ fig1=plt.ylabel("Accuracy")
 fig1.figure.savefig('foo1.png', bbox_inches='tight')
 ```
 
+Bagging, Random Forest and Gradient Boosting
+Decision Trees as seen above have the tendency to overfit. There are several techniques
+that help to avoid this namely a) Bagging  b) Random Forests c) Boosting
 
+In these techniques an ensemble (collection of trees) is created and then these trees are 
+averaged (random forest) or a trees is created and its performance improved incrementally
+(boosting).  These techniques use a methof known as 'bootstrapping'. In bootstraping when
+we have a data set of size 'N' then we create a bootstrap sample of size 'N' by sampling the
+original dataset with replacement. 
+
+In the Random Forest we create 'N' number of random trees from different bootstrap samples
+and also at each split a random subset of feature variables is chosen. Finally all the trees
+are averaged which tends to average out the overall error in the individual trees
 
 # Random Forest - R
 ```{r}
@@ -285,6 +297,7 @@ importance(rfBoston)
 varImpPlot(rfBoston)
 ```
 
+
 # Random Forest - OOB and Cross Validation Error
 ```{r}
 oobError <- NULL
@@ -304,6 +317,31 @@ matplot(1:13,cbind(testError,oobError),pch=19,col=c("red","blue"),
         type="b",xlab="mtry(no of varaibles at each split)", ylab="Mean Squared Error")
 ```
 
+
+
+```{python}
+from sklearn.ensemble import RandomForestRegressor
+df = pd.read_csv("Boston.csv",encoding = "ISO-8859-1")
+
+X=df[['crimeRate','zone', 'indus','charles','nox','rooms', 'age','distances','highways','tax',
+       'teacherRatio','color','status']]
+y=df['medianValue']
+regr = RandomForestRegressor(max_depth=4, random_state=0)
+regr.fit(X, y)
+feature_names=['crimeRate','zone', 'indus','charles','nox','rooms', 'age','distances','highways','tax',
+       'teacherRatio','color','status']
+print(regr.feature_importances_)
+plt.figure(figsize=(10,6),dpi=80)
+c_features=X.shape[1]
+plt.barh(np.arange(c_features),regr.feature_importances_)
+plt.xlabel("Feature importance")
+plt.ylabel("Feature name")
+
+plt.yticks(np.arange(c_features), feature_names)
+plt.tight_layout()
+
+plt.show()
+```
 
 # Boosting - R code
 
