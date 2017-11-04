@@ -134,3 +134,50 @@ text(prunedCancer,pretty=0)
 
 pred <- predict(prunedCancer,newdata=test,type="class")
 confusionMatrix(pred,test$target)
+
+
+################################################
+df=read.csv("Boston.csv",stringsAsFactors = FALSE) # Data from MASS - SL
+
+# Select specific columns
+Boston <- df %>% dplyr::select("crimeRate","zone","indus","charles","nox","rooms","age",
+                            "distances","highways","tax","teacherRatio","color","status","medianValue")
+library(randomForest)
+
+
+train_idx <- trainTestSplit(Boston,trainPercent=75,seed=5)
+train <- Boston[train_idx, ]
+test <- Boston[-train_idx, ]
+
+bagBoston=randomForest(medianValue~.,data=medianValue,mtry=13,importance=TRUE)
+bagBoston
+yhatBag = predict(bagBoston,newdata=test)
+plot(yhatBag, test$medianValue)
+abline(0,1)
+mean((yhatBag-test$medianValue)^2)
+
+# Fit a Random Forest on the Boston training data
+rfBoston=randomForest(medianValue~.,data=train)
+# Display the summatu of the fit. It can be seen that the MSE is 10.88 and the percentage variane
+# explained is 86.14%. About 4 variables were tried at each split for a maximum tree of 500.
+# The MSE and percent variance is on Out of Bag trees
+rfBoston
+importance(rfBoston)
+varImpPlot(rfBoston)
+
+oobError <- NULL
+testError <- NULL
+# In the code below the number of variables to consider at each split is increased
+# from 1 - 13 and the OOB error and the MSE is computed
+for(i in 1:13){
+    fitRF=randomForest(medianValue~.,data=train,mtry=i,ntree=400)
+    oobError[i] <-fitRF$mse[400]
+    pred <- predict(fitRF,newdata=test)
+    testError[i] <- mean((pred-test$medianValue)^2)
+}
+
+matplot(1:13,cbind(testError,oobError),pch=19,col=c("red","blue"),
+        type="b",xlab="mtry(no of varaibles at each split)", ylab="Mean Squared Error")
+# The random forest selects a random  number of variables at each decision node and is chosen
+
+
