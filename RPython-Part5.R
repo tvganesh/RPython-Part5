@@ -176,8 +176,60 @@ for(i in 1:13){
     testError[i] <- mean((pred-test$medianValue)^2)
 }
 
+# We can see the OOB and Test Error. It can be seen that the Random Forest performs
+# best with the lowers MSE at mtry=6
 matplot(1:13,cbind(testError,oobError),pch=19,col=c("red","blue"),
         type="b",xlab="mtry(no of varaibles at each split)", ylab="Mean Squared Error")
-# The random forest selects a random  number of variables at each decision node and is chosen
 
 
+# Boosting
+library(gbm)
+# Perform gradient boosting on the Boston data set. The distribution is gaussian since we
+# doing MSE. The interaction depth specifies the number of splits
+boostBoston=gbm(medianValue~.,data=train,distribution="gaussian",n.trees=5000,
+                shrinkage=0.01,interaction.depth=4)
+#The summary gives the variable importance. The 2 most significant variables are
+# number of rooms and lower status
+summary(boostBoston)
+
+# The plots below show how each variable relates to the median value of the home. As
+# the number of roomd increase the median value increases and with increase in lower status
+# the median value decreases
+par(mfrow=c(1,2))
+plot(boostBoston,i="rooms")
+plot(boostBoston,i="status")
+
+
+pred <- predict(boostBoston,newdata=test,n.trees=seq(100,5000,by=50))
+testError <- mean((pred-test$medianValue)^2)
+testError
+
+
+cvBoost=gbm(medianValue~.,data=train,distribution="gaussian",n.trees=5000,
+                shrinkage=0.01,interaction.depth=4,cv.folds=5)
+
+cvError <- NULL
+s <- c(.001,0.09,0.07,0.05,0.03,0.01,0.1)
+for(i in seq_along(s)){
+    cvBoost=gbm(medianValue~.,data=train,distribution="gaussian",n.trees=5000,
+                shrinkage=s[i],interaction.depth=4,cv.folds=5)
+    cvError[i] <- mean(cvBoost$cv.error)
+}
+
+# Create a data frame for plotting
+a <- rbind(s,cvError)
+b <- as.data.frame(t(a))
+# It can be seen that a shrinkage parameter of 0,05 gives the lowes CV Error
+ggplot(b,aes(s,cvError)) + geom_point() + geom_line(color="blue") + 
+    xlab("Shrinkage") + ylab("Cross Validation Error") +
+    ggtitle("Gradient boosted trees - Cross Validation error vs Shrinkage")
+    
+
+plot(s,cvError,pch=19,type="b",xlab="Shrinkage",ylab="Cross Validation Error",
+     main="Gradient boosted trees - Cross Validation error vs Shrinkage",xlim=c(-1,1))
+
+
+for(i in seq_along(s)){
+    print(i)
+    print(s[i])
+}

@@ -263,3 +263,85 @@ fig1=plt.ylabel("Accuracy")
 fig1.figure.savefig('foo1.png', bbox_inches='tight')
 ```
 
+
+
+# Random Forest - R
+```{r}
+df=read.csv("Boston.csv",stringsAsFactors = FALSE) # Data from MASS - SL
+
+# Select specific columns
+Boston <- df %>% dplyr::select("crimeRate","zone","indus","charles","nox","rooms","age",
+                            "distances","highways","tax","teacherRatio","color","status","medianValue")
+library(randomForest)
+# Fit a Random Forest on the Boston training data
+rfBoston=randomForest(medianValue~.,data=train)
+# Display the summatu of the fit. It can be seen that the MSE is 10.88 
+# and the percentage variance explained is 86.14%. About 4 variables were tried at each # split for a maximum tree of 500.
+# The MSE and percent variance is on Out of Bag trees
+rfBoston
+
+#List and plot the variable importances
+importance(rfBoston)
+varImpPlot(rfBoston)
+```
+
+# Random Forest - OOB and Cross Validation Error
+```{r}
+oobError <- NULL
+testError <- NULL
+# In the code below the number of variables to consider at each split is increased
+# from 1 - 13 and the OOB error and the MSE is computed
+for(i in 1:13){
+    fitRF=randomForest(medianValue~.,data=train,mtry=i,ntree=400)
+    oobError[i] <-fitRF$mse[400]
+    pred <- predict(fitRF,newdata=test)
+    testError[i] <- mean((pred-test$medianValue)^2)
+}
+
+# We can see the OOB and Test Error. It can be seen that the Random Forest performs
+# best with the lowers MSE at mtry=6
+matplot(1:13,cbind(testError,oobError),pch=19,col=c("red","blue"),
+        type="b",xlab="mtry(no of varaibles at each split)", ylab="Mean Squared Error")
+```
+
+
+# Boosting - R code
+
+```{r}
+library(gbm)
+# Perform gradient boosting on the Boston data set. The distribution is gaussian since we
+# doing MSE. The interaction depth specifies the number of splits
+boostBoston=gbm(medianValue~.,data=train,distribution="gaussian",n.trees=5000,
+                shrinkage=0.01,interaction.depth=4)
+#The summary gives the variable importance. The 2 most significant variables are
+# number of rooms and lower status
+summary(boostBoston)
+
+# The plots below show how each variable relates to the median value of the home. As
+# the number of roomd increase the median value increases and with increase in lower status
+# the median value decreases
+par(mfrow=c(1,2))
+plot(boostBoston,i="rooms")
+plot(boostBoston,i="status")
+```
+
+# Cross Validation Boosting - R code
+```{r}
+cvError <- NULL
+s <- c(.001,0.09,0.07,0.05,0.03,0.01,0.1)
+for(i in seq_along(s)){
+    cvBoost=gbm(medianValue~.,data=train,distribution="gaussian",n.trees=5000,
+                shrinkage=s[i],interaction.depth=4,cv.folds=5)
+    cvError[i] <- mean(cvBoost$cv.error)
+}
+
+# Create a data frame for plotting
+a <- rbind(s,cvError)
+b <- as.data.frame(t(a))
+# It can be seen that a shrinkage parameter of 0,05 gives the lowes CV Error
+ggplot(b,aes(s,cvError)) + geom_point() + geom_line(color="blue") + 
+    xlab("Shrinkage") + ylab("Cross Validation Error") +
+    ggtitle("Gradient boosted trees - Cross Validation error vs Shrinkage")
+    
+```
+
