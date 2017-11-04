@@ -326,13 +326,22 @@ df = pd.read_csv("Boston.csv",encoding = "ISO-8859-1")
 X=df[['crimeRate','zone', 'indus','charles','nox','rooms', 'age','distances','highways','tax',
        'teacherRatio','color','status']]
 y=df['medianValue']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = 0)
+
 regr = RandomForestRegressor(max_depth=4, random_state=0)
-regr.fit(X, y)
+regr.fit(X_train, y_train)
+
+print('R-squared score (training): {:.3f}'
+     .format(regr.score(X_train, y_train)))
+print('R-squared score (test): {:.3f}'
+     .format(regr.score(X_test, y_test)))
+
 feature_names=['crimeRate','zone', 'indus','charles','nox','rooms', 'age','distances','highways','tax',
        'teacherRatio','color','status']
 print(regr.feature_importances_)
 plt.figure(figsize=(10,6),dpi=80)
-c_features=X.shape[1]
+c_features=X_train.shape[1]
 plt.barh(np.arange(c_features),regr.feature_importances_)
 plt.xlabel("Feature importance")
 plt.ylabel("Feature name")
@@ -341,7 +350,34 @@ plt.yticks(np.arange(c_features), feature_names)
 plt.tight_layout()
 
 plt.show()
+
 ```
+
+```{python}
+from sklearn.ensemble import RandomForestRegressor
+df = pd.read_csv("Boston.csv",encoding = "ISO-8859-1")
+
+X=df[['crimeRate','zone', 'indus','charles','nox','rooms', 'age','distances','highways','tax',
+       'teacherRatio','color','status']]
+y=df['medianValue']
+
+cvError=[]
+for i in range(1,13):
+    regr = RandomForestRegressor(max_depth=4, n_estimators=400,max_features=i,random_state=0)
+    mse= np.mean(cross_val_score(regr, X, y, cv=5,scoring = 'neg_mean_squared_error'))
+    # Since this is neg_mean_squared_error I have inverted the sign to get MSE
+    cvError.append(-mse)
+    
+plt.plot(range(1,13),cvError)
+fig2=plt.title("Random Forest - 5-fold CV- Mean Squared Error vs max_features (variable no of features)")
+fig2=plt.xlabel("max_features (variable no of features)")
+fig2=plt.ylabel("Mean Squared Error")
+fig2.figure.savefig('foo2.png', bbox_inches='tight')
+plt.show()
+```
+
+
+
 
 # Boosting - R code
 
