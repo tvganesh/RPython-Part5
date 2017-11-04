@@ -199,10 +199,14 @@ par(mfrow=c(1,2))
 plot(boostBoston,i="rooms")
 plot(boostBoston,i="status")
 
-
-pred <- predict(boostBoston,newdata=test,n.trees=seq(100,5000,by=50))
-testError <- mean((pred-test$medianValue)^2)
-testError
+nTrees=seq(100,5000,by=50)
+# Predict the values for the test data
+pred <- predict(boostBoston,newdata=test,n.trees=nTrees)
+# Compute the mean for each of the MSE for each of the number of trees 
+boostError <- apply((pred-test$medianValue)^2,2,mean)
+#Plot the MSE vs the number of trees
+plot(nTrees,boostError,pch=19,col="blue",ylab="Mean Squared Error",
+     main="Boosting Test Error")
 
 
 cvBoost=gbm(medianValue~.,data=train,distribution="gaussian",n.trees=5000,
