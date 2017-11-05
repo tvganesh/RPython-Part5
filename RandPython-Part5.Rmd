@@ -29,7 +29,7 @@ where k=1,2,3... K
 The 1st and 2nd derivatives of cubic splines are continuous at the knots.
 
 From Statistical Learing
-```{r}
+```{r fig1}
 df=read.csv("auto_mpg.csv",stringsAsFactors = FALSE) # Data from UCI
 df1 <- as.data.frame(sapply(df,as.numeric))
 df2 <- df1 %>% dplyr::select(cylinder,displacement, horsepower,weight, acceleration, year,mpg)
@@ -40,8 +40,7 @@ ggplot(auto,aes(x=horsepower,y=mpg)) + geom_point() + xlab("Horsepower") +
 
 
 # Fit a 4th degree polynomial
-In the code below a global 4th order polynomial is used to fit the entire range of the x axis
-parameter.
+In the code below a global 4th order polynomial is used to fit the entire range of the x axis parameter.
 ```{r}
 df=read.csv("auto_mpg.csv",stringsAsFactors = FALSE) # Data from UCI
 df1 <- as.data.frame(sapply(df,as.numeric))
@@ -165,7 +164,26 @@ plot(gam,se=TRUE)
 I did not find the equivalent of GAMs in sklearn. There was an early prototype in Github. Looks like it is still work in progress or has probably been abandoned.
 
 
-## Decision Trees 
+## Trees 
+Tree based Machine Learning are all based on the 'bootstrapping' technique. In bootstrapping
+given a sample of size N, we create datasets of size N by sampling this original dataset with replacement. Machine Learning models are built on the different samples and then averaged.
+
+
+Decision Trees as seen above have the tendency to overfit. There are several techniques
+that help to avoid this namely a) Bagging  b) Random Forests c) Boosting
+
+Bagging, Random Forest and Gradient Boosting 
+Bagging, or  Bootstrap Aggregation decreases the variance of prediction by creating
+separate Decisiion Tree based ML models on the different samples and then averaging
+these ML models
+
+
+Bagging is a greedy algorithm and tries to produce splits based on all variables which try to minimize the error. However the different ML models have a high correlation. Random Forests remove this shortcoming, by using a variable and random set of features to split on. Hence the features chosen and the resulting trees are uncorrelated. When these ML models are averaged the performance is much better.
+
+Gradient Boosted Decision Trees also use an ensemble of trees but they don't build Machine Learning models  with random set of features at each step. Rather small and simple trees are built. Successive trees try to minimize the error from the earlier trees.
+
+
+Out of Bag (OOOB) Error - In Random Forest and Gradient Boosting for each bootstrap sample taken from the dataset, there will be samples left out. These are known as Out of Bag samples.Classification accuracy carried out on these OOB samples is known as OOB error
 
 ```{r}
 cancer <- read.csv("cancer.csv",stringsAsFactors = FALSE)
@@ -263,21 +281,7 @@ fig1=plt.ylabel("Accuracy")
 fig1.figure.savefig('foo1.png', bbox_inches='tight')
 ```
 
-Bagging, Random Forest and Gradient Boosting
-Decision Trees as seen above have the tendency to overfit. There are several techniques
-that help to avoid this namely a) Bagging  b) Random Forests c) Boosting
 
-In these techniques an ensemble (collection of trees) is created and then these trees are 
-averaged (random forest) or a trees is created and its performance improved incrementally
-(boosting).  These techniques use a methof known as 'bootstrapping'. In bootstraping when
-we have a data set of size 'N' then we create a bootstrap sample of size 'N' by sampling the
-original dataset with replacement. 
-
-In the Random Forest we create 'N' number of random trees from different bootstrap samples
-and also at each split a random subset of feature variables is chosen. Finally all the trees
-are averaged which tends to average out the overall error in the individual trees
-
-Gradient Boosted Decision Trees also use an ensemble of trees but they don't build trees with random set of features at each step. Rather small and simple trees are built and then the successive trees try to minimize the error from the earlier trees.
 
 # Random Forest - R
 ```{r}
@@ -413,7 +417,7 @@ plot(nTrees,boostError,pch=19,col="blue",ylab="Mean Squared Error",
 # Cross Validation Boosting - R code
 ```{r}
 cvError <- NULL
-s <- c(.001,0.09,0.07,0.05,0.03,0.01,0.1)
+s <- c(.001,0.01,0.03,0.05,0.07,0.09,0.1)
 for(i in seq_along(s)){
     cvBoost=gbm(medianValue~.,data=train,distribution="gaussian",n.trees=5000,
                 shrinkage=s[i],interaction.depth=4,cv.folds=5)
@@ -428,5 +432,48 @@ ggplot(b,aes(s,cvError)) + geom_point() + geom_line(color="blue") +
     xlab("Shrinkage") + ylab("Cross Validation Error") +
     ggtitle("Gradient boosted trees - Cross Validation error vs Shrinkage")
     
+```
+
+```{python}
+from sklearn.ensemble import GradientBoostingRegressor
+df = pd.read_csv("Boston.csv",encoding = "ISO-8859-1")
+
+X=df[['crimeRate','zone', 'indus','charles','nox','rooms', 'age','distances','highways','tax',
+       'teacherRatio','color','status']]
+y=df['medianValue']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = 0)
+
+regr = GradientBoostingRegressor()
+regr.fit(X_train, y_train)
+
+print('R-squared score (training): {:.3f}'
+     .format(regr.score(X_train, y_train)))
+print('R-squared score (test): {:.3f}'
+     .format(regr.score(X_test, y_test)))
+```
+
+```{python}
+from sklearn.ensemble import GradientBoostingRegressor
+df = pd.read_csv("Boston.csv",encoding = "ISO-8859-1")
+
+X=df[['crimeRate','zone', 'indus','charles','nox','rooms', 'age','distances','highways','tax',
+       'teacherRatio','color','status']]
+y=df['medianValue']
+
+cvError=[]
+learning_rate =[.001,0.01,0.03,0.05,0.07,0.09,0.1]
+#learning_rate =[.001,0.09,0.07,0.05,0.03,0.01,0.1]
+for lr in learning_rate:
+    regr = GradientBoostingRegressor(max_depth=4, n_estimators=400,learning_rate  =lr,random_state=0)
+    mse= np.mean(cross_val_score(regr, X, y, cv=10,scoring = 'neg_mean_squared_error'))
+    # Since this is neg_mean_squared_error I have inverted the sign to get MSE
+    cvError.append(-mse)
+learning_rate =[.001,0.01,0.03,0.05,0.07,0.09,0.1]
+plt.plot(learning_rate,cvError)
+fig2=plt.title("Random Forest - 5-fold CV- Mean Squared Error vs max_features (variable no of features)")
+fig2=plt.xlabel("max_features (variable no of features)")
+fig2=plt.ylabel("Mean Squared Error")
+fig2.figure.savefig('foo2.png', bbox_inches='tight')
 ```
 

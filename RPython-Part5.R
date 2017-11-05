@@ -213,7 +213,7 @@ cvBoost=gbm(medianValue~.,data=train,distribution="gaussian",n.trees=5000,
                 shrinkage=0.01,interaction.depth=4,cv.folds=5)
 
 cvError <- NULL
-s <- c(.001,0.09,0.07,0.05,0.03,0.01,0.1)
+s <- c(.001,0.01,0.03,0.05,0.07,0.09,0.1)
 for(i in seq_along(s)){
     cvBoost=gbm(medianValue~.,data=train,distribution="gaussian",n.trees=5000,
                 shrinkage=s[i],interaction.depth=4,cv.folds=5)
