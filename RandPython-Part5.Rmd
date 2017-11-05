@@ -146,7 +146,7 @@ lines(hpGrid,pred$fit-2*pred$se,lty="dashed")
 Here a smoothing spline is used. Smoothing splines also do not require the explicit 
 setting of knots. We can change the 'degrees of freedom(df)' paramater to get the best
 fit
-```{r}
+```{r fig4,cache=TRUE}
 # Smoothing spline has a smoothing parameter, the degrees of freedom
 # This is too wiggly
 plot(auto$horsepower,auto$mpg,xlim=hp,cex=.5,col="black",xlab="Horsepower",
@@ -204,7 +204,7 @@ $$y_{i} = \beta_{0} + f_{1}(x_{i1}) + f_{2}(x_{i2}) + .. +f_{p}(x_{ip}) + \epsil
 in which we use a  different functions for each of the variables. GAMs give a much better fit since we can choose any function for the different sections
 
 ## 1.2a Generalized Additive Models (GAMs) - R Code
-```{r}
+```{r fig5,cache=TRUE}
 library(gam)
 # Fit a smoothing spline for horsepower, cyliner, displacement and acceleration
 gam=gam(mpg~s(horsepower,4)+s(cylinder,5)+s(displacement,4)+s(year,4)+s(acceleration,5),data=auto)
@@ -228,20 +228,24 @@ given a sample of size N, we create datasets of size N by sampling this original
 Decision Trees as seen above have the tendency to overfit. There are several techniques
 that help to avoid this namely a) Bagging  b) Random Forests c) Boosting
 
-Bagging, Random Forest and Gradient Boosting 
-Bagging, or  Bootstrap Aggregation decreases the variance of prediction by creating
-separate Decisiion Tree based ML models on the different samples and then averaging
-these ML models
+### Bagging, Random Forest and Gradient Boosting 
+
+**Bagging**: Bagging, or  Bootstrap Aggregation decreases the variance of prediction 
+by creating separate Decisiion Tree based ML models on the different samples and then averaging these ML models
 
 
-Bagging is a greedy algorithm and tries to produce splits based on all variables which try to minimize the error. However the different ML models have a high correlation. Random Forests remove this shortcoming, by using a variable and random set of features to split on. Hence the features chosen and the resulting trees are uncorrelated. When these ML models are averaged the performance is much better.
+**Random Forests**: Bagging is a greedy algorithm and tries to produce splits based on all variables which try to minimize the error. However the different ML models have a high correlation. Random Forests remove this shortcoming, by using a variable and random set of features to split on. Hence the features chosen and the resulting trees are uncorrelated. When these ML models are averaged the performance is much better.
 
-Gradient Boosted Decision Trees also use an ensemble of trees but they don't build Machine Learning models  with random set of features at each step. Rather small and simple trees are built. Successive trees try to minimize the error from the earlier trees.
+**Boosting**: Gradient Boosted Decision Trees also use an ensemble of trees but they don't build Machine Learning models  with random set of features at each step. Rather small and simple trees are built. Successive trees try to minimize the error from the earlier trees.
 
 
-Out of Bag (OOOB) Error - In Random Forest and Gradient Boosting for each bootstrap sample taken from the dataset, there will be samples left out. These are known as Out of Bag samples.Classification accuracy carried out on these OOB samples is known as OOB error
+**Out of Bag (OOOB) Error**: In Random Forest and Gradient Boosting for each bootstrap sample taken from the dataset, there will be samples left out. These are known as Out of Bag samples.Classification accuracy carried out on these OOB samples is known as OOB error
 
-```{r}
+
+## 1.31a Decision Trees - R Code
+```{r fig6,cache=TRUE}
+# Read the cancer data
+library(tree)
 cancer <- read.csv("cancer.csv",stringsAsFactors = FALSE)
 cancer <- cancer[,2:32]
 cancer$target <- as.factor(cancer$target)
@@ -253,9 +257,29 @@ test <- cancer[-train_idx, ]
 cancerStatus=tree(target~.,train)
 summary(cancerStatus)
 
+
+pred <- predict(cancerStatus,newdata=test,type="class")
+confusionMatrix(pred,test$target)
+
 # Plot decision tree with labels
 plot(cancerStatus)
 text(cancerStatus,pretty=0)
+
+
+
+```
+## 1.31b Decision Trees - Cross Validation - R Code
+```{r}
+library(tree)
+cancer <- read.csv("cancer.csv",stringsAsFactors = FALSE)
+cancer <- cancer[,2:32]
+cancer$target <- as.factor(cancer$target)
+train_idx <- trainTestSplit(cancer,trainPercent=75,seed=5)
+train <- cancer[train_idx, ]
+test <- cancer[-train_idx, ]
+
+# Create Decision Tree
+cancerStatus=tree(target~.,train)
 
 # Execute 10 fold cross validation
 cvCancer=cv.tree(cancerStatus)
@@ -268,10 +292,9 @@ text(prunedCancer,pretty=0)
 
 pred <- predict(prunedCancer,newdata=test,type="class")
 confusionMatrix(pred,test$target)
-
 ```
 
-#Decision Tree - Python
+## 1.31c Decision Trees - Python Code
 
 ```{python}
 import numpy as np
@@ -285,7 +308,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.datasets import make_classification, make_blobs
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-#(X_cancer, y_cancer) = load_breast_cancer(return_X_y = True)
+(X_cancer, y_cancer) = load_breast_cancer(return_X_y = True)
 
 X_train, X_test, y_train, y_test = train_test_split(X_cancer, y_cancer,
                                                    random_state = 0)
@@ -302,10 +325,28 @@ print('Accuracy: {:.2f}'.format(accuracy_score(y_test, y_predicted)))
 print('Precision: {:.2f}'.format(precision_score(y_test, y_predicted)))
 print('Recall: {:.2f}'.format(recall_score(y_test, y_predicted)))
 print('F1: {:.2f}'.format(f1_score(y_test, y_predicted)))
+
+# Plot the Decision Tree
+clf = DecisionTreeClassifier(max_depth=2).fit(X_train, y_train)
+dot_data = tree.export_graphviz(clf, out_file=None, 
+                         feature_names=cancer.feature_names,  
+                         class_names=cancer.target_names,  
+                         filled=True, rounded=True,  
+                         special_characters=True)  
+graph = graphviz.Source(dot_data)  
+graph
 ```
 
-#Decision Tree - Cross Validation
+## 1.31d Decision Trees - Cross Validation - Python Code
 ```{python}
+
+import numpy as np
+import pandas as pd
+import os
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_breast_cancer
+from sklearn.tree import DecisionTreeClassifier
+(X_cancer, y_cancer) = load_breast_cancer(return_X_y = True)
 from sklearn.cross_validation import train_test_split, KFold
 def computeCVAccuracy(X,y,folds):
     accuracy=[]
@@ -325,32 +366,35 @@ def computeCVAccuracy(X,y,folds):
         foldAcc.append(np.mean(accuracy))  
         
     return(foldAcc)
+    
+    
 cvAccuracy=computeCVAccuracy(pd.DataFrame(X_cancer),pd.DataFrame(y_cancer),folds=10)
 
 df1=pd.DataFrame(cvAccuracy)
 df1.columns=['cvAccuracy']
 df=df1.reindex([1,2,3,4,5,6,7,8,9,10,11,12])
 df.plot()
-fig1=plt.title("Decision Tree - 10-fold Cross Validation Accuracy vs Depth of tree")
-fig1=plt.xlabel("Depth of tree")
-fig1=plt.ylabel("Accuracy")
-fig1.figure.savefig('foo1.png', bbox_inches='tight')
+plt.title("Decision Tree - 10-fold Cross Validation Accuracy vs Depth of tree")
+plt.xlabel("Depth of tree")
+plt.ylabel("Accuracy")
+plt.savefig('fig3.png', bbox_inches='tight')
 ```
 
 
 
-# Random Forest - R
+## 1.4a Random Forest - R code
 ```{r}
+library(randomForest)
 df=read.csv("Boston.csv",stringsAsFactors = FALSE) # Data from MASS - SL
 
 # Select specific columns
-Boston <- df %>% dplyr::select("crimeRate","zone","indus","charles","nox","rooms","age",
-                            "distances","highways","tax","teacherRatio","color","status","medianValue")
-library(randomForest)
+Boston <- df %>% dplyr::select("crimeRate","zone","indus","charles","nox","rooms","age",                          "distances","highways","tax","teacherRatio","color",
+                               "status","medianValue")
+
 # Fit a Random Forest on the Boston training data
-rfBoston=randomForest(medianValue~.,data=train)
+rfBoston=randomForest(medianValue~.,data=Boston)
 # Display the summatu of the fit. It can be seen that the MSE is 10.88 
-# and the percentage variance explained is 86.14%. About 4 variables were tried at each # split for a maximum tree of 500.
+# and the percentage variance explained is 86.14%. About 4 variables were tried at each # #split for a maximum tree of 500.
 # The MSE and percent variance is on Out of Bag trees
 rfBoston
 
@@ -360,12 +404,24 @@ varImpPlot(rfBoston)
 ```
 
 
-# Random Forest - OOB and Cross Validation Error
+## 1.4b Random Forest - OOB and Cross Validation Error
 ```{r}
+library(randomForest)
+df=read.csv("Boston.csv",stringsAsFactors = FALSE) # Data from MASS - SL
+
+# Select specific columns
+Boston <- df %>% dplyr::select("crimeRate","zone","indus","charles","nox","rooms","age",                          "distances","highways","tax","teacherRatio","color",
+                               "status","medianValue")
+# Split as training and tst sets
+train_idx <- trainTestSplit(Boston,trainPercent=75,seed=5)
+train <- Boston[train_idx, ]
+test <- Boston[-train_idx, ]
+
+#Initialize OOD and testError
 oobError <- NULL
 testError <- NULL
 # In the code below the number of variables to consider at each split is increased
-# from 1 - 13 and the OOB error and the MSE is computed
+# from 1 - 13(max features) and the OOB error and the MSE is computed
 for(i in 1:13){
     fitRF=randomForest(medianValue~.,data=train,mtry=i,ntree=400)
     oobError[i] <-fitRF$mse[400]
@@ -376,12 +432,18 @@ for(i in 1:13){
 # We can see the OOB and Test Error. It can be seen that the Random Forest performs
 # best with the lowers MSE at mtry=6
 matplot(1:13,cbind(testError,oobError),pch=19,col=c("red","blue"),
-        type="b",xlab="mtry(no of varaibles at each split)", ylab="Mean Squared Error")
+        type="b",xlab="mtry(no of varaibles at each split)", ylab="Mean Squared Error",
+        main="Random Forest - OOB and Test Error")
 ```
 
-
+## 1.4c Random Forest - Python code
 
 ```{python}
+import numpy as np
+import pandas as pd
+import os
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 df = pd.read_csv("Boston.csv",encoding = "ISO-8859-1")
 
@@ -411,12 +473,18 @@ plt.ylabel("Feature name")
 plt.yticks(np.arange(c_features), feature_names)
 plt.tight_layout()
 
-plt.show()
+plt.savefig('fig4.png', bbox_inches='tight')
 
 ```
-
+## 1.4d Random Forest - Cross Validation - Python code
 ```{python}
+import numpy as np
+import pandas as pd
+import os
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import cross_val_score
 df = pd.read_csv("Boston.csv",encoding = "ISO-8859-1")
 
 X=df[['crimeRate','zone', 'indus','charles','nox','rooms', 'age','distances','highways','tax',
@@ -426,16 +494,16 @@ y=df['medianValue']
 cvError=[]
 for i in range(1,13):
     regr = RandomForestRegressor(max_depth=4, n_estimators=400,max_features=i,random_state=0)
-    mse= np.mean(cross_val_score(regr, X, y, cv=5,scoring = 'neg_mean_squared_error'))
+    mse= np.mean(cross_val_score(regr, X, y, cv=10,scoring = 'neg_mean_squared_error'))
     # Since this is neg_mean_squared_error I have inverted the sign to get MSE
     cvError.append(-mse)
     
 plt.plot(range(1,13),cvError)
-fig2=plt.title("Random Forest - 5-fold CV- Mean Squared Error vs max_features (variable no of features)")
-fig2=plt.xlabel("max_features (variable no of features)")
-fig2=plt.ylabel("Mean Squared Error")
-fig2.figure.savefig('foo2.png', bbox_inches='tight')
-plt.show()
+plt.title("Random Forest - 5-fold CV- Mean Squared Error vs max_features (variable no of features)")
+plt.xlabel("max_features (variable no of features)")
+plt.ylabel("Mean Squared Error")
+plt.savefig('foo2.png', bbox_inches='tight')
+
 ```
 
 
