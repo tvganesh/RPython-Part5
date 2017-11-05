@@ -1,9 +1,26 @@
 ---
-title: "RanndPython-Part5"
+title: "Practical Machine Learning with R and Python - Part 5"
 author: "Tinniam V Ganesh"
 date: "November 3, 2017"
 output: html_document
 ---
+
+This is the 5th and probably penultimate part of my series on 'Practical Machine Learning
+with R and Python'. The earlier parts of this series included
+
+1. [Practical Machine Learning with R and Python - Part 1](https://gigadom.wordpress.com/2017/10/06/practical-machine-learning-with-r-and-python-part-1/)
+In this initial post I touch upon univariate, multivariate, polynomial regression and KNN regression in R and Python
+2. [Practical Machine Learning with R and Python - Part 2](https://gigadom.wordpress.com/2017/10/13/practical-machine-learning-with-r-and-python-part-2/)
+In this post I touch upon Logistic Regression, KNN classification and cross validation error for both LOOCV and K-Fold in both R and Python 
+3. [https://gigadom.wordpress.com/2017/10/20/practical-machine-learning-with-r-and-python-part-3/] (https://gigadom.wordpress.com/2017/10/20/practical-machine-learning-with-r-and-python-part-3/)
+In this post I covered 'feature selection' in Machine Learning. Specifically I touch best fit, forward fit, backward fit, ridge(L2 regularization) & lasso (L1 regularization). The post includes equivalent code in R and Python. 
+4.[Practical Machine Learning with R and Python - Part 4](https://gigadom.wordpress.com/2017/10/29/practical-machine-learning-with-r-and-python-part-4/)
+In this part I discussed SVM, Decision Trees, validation, precision recall, and roc curves
+
+
+This post 'Practical Machine Learning with R and Python - Part 5' discusses regression with B-splines, natural splines, smoothing splines, generalized additive models (GAMS), bagging,
+random forest and boosting
+
 
 ## 1. Splines
 When performing regression (continuous or logistic) between a target variable and a 
@@ -31,7 +48,7 @@ From Statistical Learing
 
 ## 1.1a Fit a 4th degree polynomial - R code
 In the code below a non-linear function (a 4th order polynomial) is used to fit the data. Usually when we fit a single polynomial to the entire data set the tails of the fit tend to vary a lot particularly if there are  fewer points at the ends. Splines help in reducing this variation at the extremities
-```{r fig1,cache=TRUE}
+```{r fig1,cache=TRUE,warning=FALSE,message=FALSE}
 library(dplyr)
 library(ggplot2)
 source('RFunctions-1.R')
@@ -145,11 +162,11 @@ lines(hpGrid,pred$fit-2*pred$se,lty="dashed")
 
 ```
 
-## 1.1.e Smoothing Spline
+## 1.1.e Fit a Smoothing Spline - R code 
 Here a smoothing spline is used. Smoothing splines also do not require the explicit 
 setting of knots. We can change the 'degrees of freedom(df)' paramater to get the best
 fit
-```{r fig4,cache=TRUE}
+```{r fig4,cache=TRUE,warning=FALSE,message=FALSE}
 # Smoothing spline has a smoothing parameter, the degrees of freedom
 # This is too wiggly
 plot(auto$horsepower,auto$mpg,xlim=hp,cex=.5,col="black",xlab="Horsepower",
@@ -159,7 +176,7 @@ plot(auto$horsepower,auto$mpg,xlim=hp,cex=.5,col="black",xlab="Horsepower",
 fit=smooth.spline(auto$horsepower,auto$mpg,df=16)
 lines(fit,col="red",lwd=2)
 
-# We can use Cross Validation to allow the spline to pick the value of this smpopothing paramter
+# We can use Cross Validation to allow the spline to pick the value of this smpopothing paramter. We do not need to set the degrees of freedom 'df'
 fit=smooth.spline(auto$horsepower,auto$mpg,cv=TRUE)
 lines(fit,col="blue",lwd=2)
 ```
@@ -167,7 +184,7 @@ lines(fit,col="blue",lwd=2)
 
 ## 1.1e Splines - Python
 
-There aren't as much treatment of splines in Python. I did find the LSQUnivariate spline. This requires the explcit setting of knots
+There isn't as much treatment of splines in Python and SKLearn. I did find the LSQUnivariate, UnivariateSpline spline. The LSQUnivariate spline  requires the explcit setting of knots
 ```{python}
 import numpy as np
 import pandas as pd
@@ -201,13 +218,13 @@ plt.savefig('fig2.png', bbox_inches='tight')
 
 
 ## 1.2 Generalized Additiive models (GAMs)
-
+Generalized Additive Models (GAMs) is a really powerful ML tool. 
 
 $$y_{i} = \beta_{0} + f_{1}(x_{i1}) + f_{2}(x_{i2}) + .. +f_{p}(x_{ip}) + \epsilon_{i}$$
-in which we use a  different functions for each of the variables. GAMs give a much better fit since we can choose any function for the different sections
+In GAMs  we use a  different functions for each of the variables. GAMs give a much better fit since we can choose any function for the different sections
 
 ## 1.2a Generalized Additive Models (GAMs) - R Code
-```{r fig5,cache=TRUE}
+```{r fig5,cache=TRUE,warning=FALSE,message=FALSE}
 library(gam)
 # Fit a smoothing spline for horsepower, cyliner, displacement and acceleration
 gam=gam(mpg~s(horsepower,4)+s(cylinder,5)+s(displacement,4)+s(year,4)+s(acceleration,5),data=auto)
@@ -219,13 +236,13 @@ plot(gam,se=TRUE)
 
 ```
 
-## 1.2b ## 1.2 a Generalized Additive Models (GAMs) - Python Code
+## 1.2b Generalized Additive Models (GAMs) - Python Code
 I did not find the equivalent of GAMs in SKlearn in Python. There was an early prototype (2012) in Github. Looks like it is still work in progress or has probably been abandoned.
 
 
-## 1.3  Tree based Machine Learning Models 
+## 1.3 Tree based Machine Learning Models 
 Tree based Machine Learning are all based on the 'bootstrapping' technique. In bootstrapping
-given a sample of size N, we create datasets of size N by sampling this original dataset with replacement. Machine Learning models are built on the different samples and then averaged.
+given a sample of size N, we create datasets of size N by sampling this original dataset with replacement. Machine Learning models are built on the different bootstrapped samples and then averaged.
 
 
 Decision Trees as seen above have the tendency to overfit. There are several techniques
@@ -233,7 +250,7 @@ that help to avoid this namely a) Bagging  b) Random Forests c) Boosting
 
 ### Bagging, Random Forest and Gradient Boosting 
 
-**Bagging**: Bagging, or  Bootstrap Aggregation decreases the variance of prediction 
+**Bagging**: Bagging, or  Bootstrap Aggregation decreases the variance of predictions, 
 by creating separate Decisiion Tree based ML models on the different samples and then averaging these ML models
 
 
@@ -242,11 +259,13 @@ by creating separate Decisiion Tree based ML models on the different samples and
 **Boosting**: Gradient Boosted Decision Trees also use an ensemble of trees but they don't build Machine Learning models  with random set of features at each step. Rather small and simple trees are built. Successive trees try to minimize the error from the earlier trees.
 
 
-**Out of Bag (OOOB) Error**: In Random Forest and Gradient Boosting for each bootstrap sample taken from the dataset, there will be samples left out. These are known as Out of Bag samples.Classification accuracy carried out on these OOB samples is known as OOB error
+**Out of Bag (OOB) Error**: In Random Forest and Gradient Boosting for each bootstrap sample taken from the dataset, there will be samples left out. These are known as Out of Bag samples.Classification accuracy carried out on these OOB samples is known as OOB error
 
 
 ## 1.31a Decision Trees - R Code
-```{r fig6,cache=TRUE}
+The code below creates a Decision tree with the cancer training data. The summary of the fit is output. Based on the ML model, the predict function is used on test data and a confusion 
+matrix is output.
+```{r fig6,cache=TRUE, message=FALSE,warning=FALSE}
 # Read the cancer data
 library(tree)
 library(caret)
@@ -269,11 +288,12 @@ confusionMatrix(pred,test$target)
 # Plot decision tree with labels
 plot(cancerStatus)
 text(cancerStatus,pretty=0)
-
-
-
 ```
+
+
 ## 1.31b Decision Trees - Cross Validation - R Code
+We can also perform a Cross Validation on the data to identify the Decision Tree which will
+give the minimum deviance.
 ```{r fig7,cache=TRUE}
 library(tree)
 cancer <- read.csv("cancer.csv",stringsAsFactors = FALSE)
@@ -300,6 +320,8 @@ confusionMatrix(pred,test$target)
 ```
 
 ## 1.31c Decision Trees - Python Code
+Below is the Python code for creating Decision Trees. The accuracy, precision, recall 
+and F1 score is computed on the test data set.
 
 ```{python}
 import numpy as np
@@ -346,6 +368,10 @@ graph
 ```
 
 ## 1.31d Decision Trees - Cross Validation - Python Code
+In the code below 5-fold cross validation is performed for different depths of the tree
+and the accuracy is computed. The accuracy on the test set seems to plateau when 
+the depth is 8. But it is seen to increase again from 10 to 12. More analysis needs to
+be done here
 ```{python}
 
 import numpy as np
@@ -391,7 +417,11 @@ plt.savefig('fig3.png', bbox_inches='tight')
 
 
 ## 1.4a Random Forest - R code
-```{r fig8,cache=TRUE}
+A Random Forest is fit using the Boston data. The summary shows that 4 variables
+were randomly chosen at each split and the resulting ML model explains 88.72% of the
+test data. Also the variable importance is plotted. It can be seen that 'rooms' and 'status'
+are the most influential features in the model
+```{r fig8,cache=TRUE, message=FALSE,warning=FALSE}
 library(randomForest)
 df=read.csv("Boston.csv",stringsAsFactors = FALSE) # Data from MASS - SL
 
@@ -413,6 +443,9 @@ varImpPlot(rfBoston)
 
 
 ## 1.4b Random Forest - OOB and Cross Validation Error
+The figure below shows the OOB error and the Cross Validation error vs the 'mtry'. Here
+mtry indicates the number of random features that are chosen at each split. The lowest
+test error occurs when mtry = 8
 ```{r fig9,cache=TRUE}
 library(randomForest)
 df=read.csv("Boston.csv",stringsAsFactors = FALSE) # Data from MASS - SL
@@ -442,10 +475,13 @@ for(i in 1:13){
 matplot(1:13,cbind(testError,oobError),pch=19,col=c("red","blue"),
         type="b",xlab="mtry(no of varaibles at each split)", ylab="Mean Squared Error",
         main="Random Forest - OOB and Test Error")
+legend("topright",legend=c("OOB","Test"),pch=19,col=c("red","blue"))
 ```
 
 ## 1.4c Random Forest - Python code
-
+The python code for Random Forest Regression is shown below. The training and test score
+is computed. The variable importance shows that 'rooms' and 'status' are the most
+influential of the variables
 ```{python}
 import numpy as np
 import pandas as pd
@@ -484,7 +520,11 @@ plt.tight_layout()
 plt.savefig('fig4.png', bbox_inches='tight')
 
 ```
+
+
 ## 1.4d Random Forest - Cross Validation - Python code
+As with R the 'max_features' determines the random number of features the random forest
+will use at each split. The plot shows that when max_features=8 the MSE is lowest
 ```{python}
 import numpy as np
 import pandas as pd
